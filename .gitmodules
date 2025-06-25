@@ -1,0 +1,3 @@
+[submodule "thirdparty/lwip"]
+	path = thirdparty/lwip
+	url = https://github.com/lwip-tcpip/lwip.git
