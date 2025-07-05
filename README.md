@@ -1,26 +1,26 @@
 # Ethernet Module lwIP
 
-This project demonstrates how to cleanly integrate the [lwIP (Lightweight IP)](https://savannah.nongnu.org/projects/lwip/) TCP/IP stack into a PlatformIO-based Arduino project.  
-It uses a **wrapper approach** to keep the upstream `lwIP` source code untouched while applying PlatformIO-specific build configuration separately.
+This project demonstrates a clean and maintainable way to integrate the [lwIP (Lightweight IP)](https://savannah.nongnu.org/projects/lwip/) TCP/IP stack into a PlatformIO Arduino project using a **wrapper library approach**. This approach keeps the upstream lwIP source code untouched and separates PlatformIO-specific build configurations.
 
 ---
 
 ## 📚 Concept: Clean Third-Party Library Integration
 
-We separate the third-party code from our project logic using this structure:
+We separate raw third-party source code from PlatformIO build logic using this structure:
 
 - `thirdparty/` — Contains raw third-party libraries (e.g., `lwIP`) as Git submodules.  
-  ⚠️ **Do not modify** files in this folder.
-  
-- `lib/` — Contains PlatformIO-compatible **wrapper libraries** that:
-  - Define how to build and filter third-party sources.
-  - Provide configuration headers (e.g., `lwipopts.h`).
-  - Are fully under your version control.
+  ⚠️ **Do not modify** files in this folder; treat as read-only.
 
-This allows you to:
-- Easily update upstream libraries via Git.
-- Keep your PlatformIO build logic clean and maintainable.
-- Avoid modifying or forking third-party code unnecessarily.
+- `lib/` — Contains PlatformIO-compatible **wrapper libraries** that:
+  - Define build instructions, source filtering, and include paths.
+  - Provide configuration headers like `lwipopts.h`.
+  - Are fully maintained under our version control.
+
+This design lets us:
+
+- Easily update upstream libraries without conflicts.
+- Keep our PlatformIO build process clean and maintainable.
+- Avoid patching or forking third-party code unnecessarily.
 
 ---
 
@@ -29,16 +29,19 @@ This allows you to:
 ```
 project-root/
 ├── lib/
-│   └── lwip/                   ← PlatformIO wrapper library
-│       ├── library.json        ← Defines build instructions
-│       └── include/
-│           └── lwipopts.h      ← lwIP configuration
+│   └── lwip_wrapper/ ← PlatformIO wrapper library
+│       ├── port/
+│       │   ├── src/ ← lwIP core source files (e.g., sys_arch.c, ethernetif.c)
+│       │   └── include/ ← lwIP headers and config
+│       │       ├── arch/ ← port-specific headers (cc.h, sys_arch.h, perf.h)
+│       │       └── lwipopts.h ← lwIP configuration header
+│       └── library.json ← PlatformIO build instructions and filters
 ├── thirdparty/
-│   └── lwip/                   ← lwIP source as Git submodule
+│   └── lwip/ ← lwIP source as Git submodule (read-only)
 │       └── src/
 ├── src/
-│   └── main.cpp                ← Your application code
-├── platformio.ini              ← PlatformIO project config
+│   └── main.cpp ← Application code
+├── platformio.ini ← PlatformIO project configuration
 └── README.md
 ```
 
@@ -57,65 +60,81 @@ git add .gitmodules thirdparty/lwip
 git commit -m "Add lwIP as submodule"
 ```
 
-Then create the PlatformIO wrapper for `lwIP`:
+### Step 2: Create PlatformIO Wrapper Library `lwip_wrapper`
 
-- Create `lib/lwip/library.json`:
+- Create the following folder structure inside `lib/lwip_wrapper/`:
 
-```json
-{
-  "name": "lwip",
-  "version": "2.2.0",
-  "build": {
-    "srcFilter": [
-      "+<../../thirdparty/lwip/src/core/>",
-      "+<../../thirdparty/lwip/src/api/>",
-      "+<../../thirdparty/lwip/src/include/>",
-      "-<*>"
-    ],
-    "includeDir": "../../thirdparty/lwip/src/include"
+  ```
+  lib/lwip_wrapper/
+  └── port/
+      ├── src/           # Copy or add our port-specific lwIP source files here (e.g. sys_arch.c)
+      └── include/
+          ├── arch/      # Port-specific headers (cc.h, perf.h, sys_arch.h)
+          └── lwipopts.h # Our lwIP configuration header
+  ```
+
+- Create `lib/lwip_wrapper/library.json`:
+
+  ```json
+  {
+    "name": "lwip_wrapper",
+    "version": "1.0.0",
+    "build": {
+      "flags": [
+        "-Iport/include",
+        "-DLWIP_TIMEVAL_PRIVATE=0"
+      ],
+      "srcFilter": [
+        "+<port/src/**>",
+        "+<../../thirdparty/lwip/src/**>",
+        "-<../../thirdparty/lwip/src/apps/http/makefsdata/**>"
+      ],
+      "includeDir": "../../thirdparty/lwip/src/include"
+    }
   }
-}
-```
+  ```
 
-- Add `lib/lwip/include/lwipopts.h` with your configuration:
-
-```c
-#ifndef LWIPOPTS_H
-#define LWIPOPTS_H
-
-#define NO_SYS 1
-#define LWIP_RAW 1
-#define LWIP_NETCONN 0
-#define LWIP_SOCKET 0
-
-#endif
-```
+### Step 3: Configure platformio.ini to use the wrapper library
 
 - Modify `platformio.ini` to add build flags:
 
-```ini
-build_flags =
-    -Ilib/lwip/include
-    -Ithirdparty/lwip/src/include
-    -DLWIP_TIMEVAL_PRIVATE=0
-```
+  ```ini
+  ; PlatformIO Project Configuration File
+  ;
+  ;   Build options: build flags, source filter
+  ;   Upload options: custom upload port, speed and extra flags
+  ;   Library options: dependencies, extra library storages
+  ;   Advanced options: extra scripting
+  ;
+  ; Please visit documentation for the other options and examples
+  ; https://docs.platformio.org/page/projectconf.html
+
+  [env:seeed_xiao]
+  platform = atmelsam
+  board = seeed_xiao
+  framework = arduino
+
+  ; Reference lwIP library (if it has a library manifest or PlatformIO can detect it)
+  lib_deps =
+      lwip_wrapper
+  ```
 
 ---
 
-### Step 2: Clone the Whole Project with Submodules (For New Developers / Later Use)
+### Step 4: Clone the Whole Project with Submodules (For New Developers / Later Use)
 
-If the project is already set up and committed with submodules, clone it with:
+- If the project is already set up and committed with submodules, clone it with:
 
-```bash
-git clone --recurse-submodules https://gitlab.com/seeed-studio-xiao-samd21/platformio/ethernet-module-lwip.git
-cd ethernet-lwip-project
-```
+  ```bash
+  git clone --recurse-submodules https://gitlab.com/seeed-studio-xiao-samd21/platformio/ethernet-module-lwip.git
+  cd ethernet-lwip-project
+  ```
 
-If you already cloned **without** `--recurse-submodules`, initialize and update them with:
+- If you already cloned **without** `--recurse-submodules`, initialize and update them with:
 
-```bash
-git submodule update --init --recursive
-```
+  ```bash
+  git submodule update --init --recursive
+  ```
 
 ---
 
@@ -146,12 +165,11 @@ git commit -m "Update lwIP to latest version"
 
 ## ✅ Summary
 
-| Component        | Description                                      |
-|------------------|--------------------------------------------------|
-| `thirdparty/lwip` | Original lwIP source as Git submodule (read-only) |
-| `lib/lwip/`      | Your PlatformIO build wrapper (fully customizable) |
-| `lwipopts.h`     | Your lwIP configuration                          |
-| `library.json`   | Controls which lwIP files are included in build  |
+| Component           | Description                                       |
+|---------------------|---------------------------------------------------|
+| `thirdparty/lwip`   | Original lwIP source as Git submodule (read-only) |
+| `lib/lwip_wrapper/` | Our PlatformIO build wrapper (fully customizable) |
+| `library.json`   | Controls which lwIP files are included in build      |
 
 ---
 
@@ -166,3 +184,4 @@ git commit -m "Update lwIP to latest version"
 
 lwIP is used under its original BSD-style license.  
 Your project can use any license compatible with it.
+

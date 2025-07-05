@@ -1,0 +1,16 @@
+{
+  "name": "lwip_wrapper",
+  "version": "1.0.0",
+  "build": {
+    "flags": [
+      "-Iport/include",
+      "-DLWIP_TIMEVAL_PRIVATE=0"
+    ],
+    "srcFilter": [
+      "+<port/src/**>",
+      "+<../../thirdparty/lwip/src/**>",
+      "-<../../thirdparty/lwip/src/apps/http/makefsdata/**>"
+    ],
+    "includeDir": "../../thirdparty/lwip/src/include"
+  }
+}

@@ -1,0 +1,14 @@
+{
+    "files.associations": {
+        "stddef.h": "c",
+        "w5500_ethernetif.h": "c",
+        "sys_arch.h": "c",
+        "err.h": "c",
+        "*.txt_v0": "c",
+        "opt.h": "c",
+        "low_level_ethernetif.h": "c",
+        "def.h": "c",
+        "debug.h": "c",
+        "type_traits": "c"
+    }
+}
