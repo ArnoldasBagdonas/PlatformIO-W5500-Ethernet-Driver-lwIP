@@ -67,7 +67,7 @@ extern "C" void sys_arch_unprotect(sys_prot_t state) {
 #error "Unsupported platform. Only AVR and ARM Cortex-M supported."
 #endif
 
-#ifdef LWIP_DEBUG
+#if defined(LWIP_DEBUG) && LWIP_DEBUG
 
 /**
  * @brief Prints a debug message prefixed by [lwip].
