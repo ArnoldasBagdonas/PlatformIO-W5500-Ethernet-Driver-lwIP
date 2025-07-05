@@ -10,7 +10,7 @@
 
 #include "ethif.h"
 
-#define USE_STATIC_IP 1            /**< @brief Set to 1 for static IP, 0 for DHCP */
+#define USE_STATIC_IP 0            /**< @brief Set to 1 for static IP, 0 for DHCP */
 
 const int BUILTIN_LED_PIN = 13;    /**< @brief Built-in LED pin number */
 const int LED1_PIN = 11;           /**< @brief External LED1 pin */
