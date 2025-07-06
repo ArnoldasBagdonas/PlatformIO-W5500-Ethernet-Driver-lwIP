@@ -206,7 +206,7 @@ The W5500 driver handles low-level SPI communication and register access for the
     - If you're cloning the project for the first time and want to include all submodules (e.g., lwIP):
 
       ```bash
-      git clone --recurse-submodules https://gitlab.com/seeed-studio-xiao-samd21/platformio/ethernet-module-lwip.git
+      git clone --recurse-submodules https://github.com/ArnoldasBagdonas/PlatformIO-W5500-Ethernet-Driver-lwIP.git
       cd ethernet-lwip-project
       ```
 
